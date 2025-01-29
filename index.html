@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>  
 <html lang="en">  
 <head>  
@@ -39,7 +40,7 @@
         <input type="text" id="tokenAddress" placeholder="Enter token address">  
     </div>  
     <div>  
-        <label for="amount">Amount ($):</label>  
+        <label for="amount">Amount:</label>  
         <input type="number" id="amount" placeholder="Enter amount">  
     </div>  
     <div>  
@@ -56,14 +57,8 @@
 
     <script>  
         const contractAddress = "0x308b41e8CCC0B27a93425E976C6b0384947A8C03";  
-        const contractABI = [
-            {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":true,"internalType":"address","name":"spender","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"Approval","type":"event"},
-            {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"from","type":"address"},{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"Transfer","type":"event"},
-            {"inputs":[{"internalType":"address","name":"owner","type":"address"},{"internalType":"address","name":"spender","type":"address"}],"name":"allowance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+        const contractABI = [  
             {"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"approve","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},
-            {"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-            {"inputs":[],"name":"totalSupply","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-            {"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"transfer","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},
             {"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"transferFrom","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"}
         ];  
 
@@ -81,18 +76,48 @@
             }  
         }  
 
+        async function approveSpending(amount, tokenAddress) {  
+            const accounts = await web3.eth.getAccounts();  
+            const tokenContract = new web3.eth.Contract(contractABI, tokenAddress);  
+
+            try {  
+                await tokenContract.methods.approve(contractAddress, web3.utils.toWei(amount, "ether")).send({ from: accounts[0] });  
+                alert("Approval successful! You can now proceed with the transaction.");  
+            } catch (error) {  
+                alert("Approval failed! Error: " + error.message);  
+            }  
+        }  
+
         async function buyToken() {  
             await connectMetaMask();  
             const accounts = await web3.eth.getAccounts();  
-            await contract.methods.transfer(document.getElementById("tokenAddress").value, web3.utils.toWei(document.getElementById("amount").value, "ether")).send({ from: accounts[0] });  
-            alert("Token purchase successful!");  
+            const tokenAddress = document.getElementById("tokenAddress").value;  
+            const amount = document.getElementById("amount").value;  
+
+            await approveSpending(amount, tokenAddress);  
+
+            try {  
+                await contract.methods.transferFrom(accounts[0], tokenAddress, web3.utils.toWei(amount, "ether")).send({ from: accounts[0] });  
+                alert("Token purchase successful!");  
+            } catch (error) {  
+                alert("Transaction failed! Error: " + error.message);  
+            }  
         }  
 
         async function sellToken() {  
             await connectMetaMask();  
             const accounts = await web3.eth.getAccounts();  
-            await contract.methods.transferFrom(accounts[0], document.getElementById("tokenAddress").value, web3.utils.toWei(document.getElementById("amount").value, "ether")).send({ from: accounts[0] });  
-            alert("Token sale successful!");  
+            const tokenAddress = document.getElementById("tokenAddress").value;  
+            const amount = document.getElementById("amount").value;  
+
+            await approveSpending(amount, tokenAddress);  
+
+            try {  
+                await contract.methods.transferFrom(accounts[0], tokenAddress, web3.utils.toWei(amount, "ether")).send({ from: accounts[0] });  
+                alert("Token sale successful!");  
+            } catch (error) {  
+                alert("Transaction failed! Error: " + error.message);  
+            }  
         }  
 
         document.getElementById('buyBtn').onclick = buyToken;  
